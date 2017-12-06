@@ -1,10 +1,7 @@
 package com.duan.javastuff;
 
-import com.duan.javastuff.encrypt.Base;
-
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.function.Consumer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created on 2017/11/22.
@@ -13,16 +10,42 @@ import java.util.function.Consumer;
  */
 public class Main {
 
+    final ReentrantLock reentrantLock = new ReentrantLock();
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, IOException {
-        String s = "信息传输完整一致。是计算机广泛使用的杂凑算法之一（又译摘要算法、哈希算法），主流编程语言普遍已有MD实现。";
-        Base b = new Base();
-        String s1 = b.encrypt(s.getBytes());
-        p.accept(s1);
-        p.accept(new String(b.decrypt(s1)));
+    public static void main(String[] args) throws InterruptedException {
+
+        Main m = new Main();
+        Condition c1 = m.reentrantLock.newCondition();
+        Condition c2 = m.reentrantLock.newCondition();
+        Condition c3 = m.reentrantLock.newCondition();
+        Thread t1 = m.get("t1", c1);
+        Thread t2 = m.get("t2", c2);
+        Thread t3 = m.get("t3", c3);
+
+        t1.start();
+        t2.start();
+        t3.start();
+
+        m.reentrantLock.lock();
+        c2.signal();
+        m.reentrantLock.unlock();
+
     }
 
-    public static Consumer<Object> p = System.out::println;
+    private Thread get(String name, Condition condition) {
+        return new Thread(() -> {
+            try {
+                reentrantLock.lock();
+                P.out(name + " await " + reentrantLock.getHoldCount() + " " + reentrantLock.isHeldByCurrentThread(), true);
+                condition.await();
+                P.out(name + " wakeup", true);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                reentrantLock.unlock();
+            }
+        }, name);
+    }
 
 }
 
