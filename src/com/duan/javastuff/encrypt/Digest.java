@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * Created on 2017/12/5.
+ * MD5 和 SHA 加密，
  *
  * @author DuanJiaNing
  */

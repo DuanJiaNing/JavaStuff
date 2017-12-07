@@ -1,6 +1,7 @@
 package com.duan.javastuff;
 
 import com.duan.javastuff.lock.TestConsumer;
+import com.duan.javastuff.lock.TestConsumerPlus;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -52,7 +53,7 @@ public class Main {
 
     public static void main(String[] args) {
         @SuppressWarnings("unchecked")
-        TestConsumer<String> consumer = new TestConsumer<>(
+        TestConsumerPlus<String> consumer = new TestConsumerPlus<>(
                 String::getBytes,
                 () -> "a",
                 () -> "b",

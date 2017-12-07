@@ -14,41 +14,28 @@ import java.util.function.Supplier;
  *
  * @author DuanJiaNing
  */
-public class TestConsumer<T> {
+public class TestConsumerPlus<T> {
 
     private final Lock lock = new ReentrantLock();
-    private final Condition condition = lock.newCondition();
 
-    /**
-     * 要生产的“货物”及其生产方式
-     */
+    //要生产的“货物”及其生产方式
     private final Supplier<T>[] suppliers;
-    /**
-     * 消费者
-     */
+    //消费者
     private final Consumer<T> consumer;
-
-    /**
-     * 生产出的产品
-     */
+    //生产出的产品
     private T product;
-
-    /**
-     * 生产者是否已经生产出一件产品
-     */
+    //生产者是否已经生产出一件产品
     private boolean isProducted = false;
-
-    /**
-     * 消费者是否已经消费了生产者生产的产品
-     */
+    //条件：生产的产品还没有被消费者消费，需要等待消费者消费
+    private Condition whenProductWaitConsume = lock.newCondition();
+    //消费者是否已经消费了生产者生产的产品
     private boolean isConsumed = true;
-
-    /**
-     * 生产者是否已经生产完所有的产品
-     */
+    //条件：没有产品可以消费，需要等待生产者
+    private Condition whenHaveProductToConsume = lock.newCondition();
+    //生产者是否已经生产完所有的产品
     private boolean finished = false;
 
-    public TestConsumer(Consumer<T> consumer, Supplier<T>... suppliers) {
+    public TestConsumerPlus(Consumer<T> consumer, Supplier<T>... suppliers) {
         this.suppliers = suppliers;
         this.consumer = consumer;
     }
@@ -93,7 +80,9 @@ public class TestConsumer<T> {
         try {
             while (!isConsumed) {
                 P.out("supplier wait");
-                condition.await();
+                // 等待生产条件：
+                // 我发现刚生产的产品还没被消费掉，等到产品被消费之后提醒我
+                whenProductWaitConsume.await();
             }
 
             // 收到可以生产的信号
@@ -102,7 +91,8 @@ public class TestConsumer<T> {
             P.out("+ " + product);
             isProducted = true;
             isConsumed = false;
-            condition.signalAll();
+            // 产品生产好了，可以消费了
+            whenHaveProductToConsume.signal();
         } finally {
             lock.unlock();
         }
@@ -115,7 +105,9 @@ public class TestConsumer<T> {
             try {
                 while (!isProducted) {
                     P.out("consumer wait");
-                    condition.await();
+                    // 等待消费条件：
+                    // 我发现现在还没有产品可以消费，所以等有产品可以消费了就提醒我
+                    whenHaveProductToConsume.await();
                 }
 
                 // 收到可以消费的信号
@@ -124,7 +116,8 @@ public class TestConsumer<T> {
                 P.out("- " + product);
                 isConsumed = true;
                 isProducted = false;
-                condition.signalAll();
+                // 产品被消费了，可以继续生产了
+                whenProductWaitConsume.signal();
             } finally {
                 lock.unlock();
             }
