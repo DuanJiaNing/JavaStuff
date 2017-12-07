@@ -9,10 +9,14 @@ import java.util.Date;
  * @author DuanJiaNing
  */
 public class P {
+    private static final SimpleDateFormat format = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss-SSS");
 
-    public static void out(Object obj, boolean newLine) {
-        SimpleDateFormat format = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss-SSS");
-        System.out.printf(format.format(new Date()) + " " + obj + (newLine ? "\n" : ""));
+    public static void out(Object obj) {
+        System.out.println(format.format(new Date()) + " " + obj);
+    }
+
+    public static void outnl(Object obj) {
+        System.out.printf(format.format(new Date()) + " " + obj);
     }
 
 }

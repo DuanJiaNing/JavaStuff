@@ -19,12 +19,12 @@ public class TestObjectMethods {
         synchronized (ob) {
             ob.wait(); //  main thread 等待并释放ob锁
         }
-        P.out(" i`m wake up", true);
+        P.out(" i`m wake up");
     }
 
     public void startWakeUpThread(long mill, Object lock) {
         new Thread(() -> {
-            P.out("wake up main thread after " + mill / 1000 + " seconds", true);
+            P.out("wake up main thread after " + mill / 1000 + " seconds");
             try {
                 Thread.sleep(mill);
                 // 当前线程需要成为锁的持有者，才能使用其 notifyAll 方法，否则将得到
