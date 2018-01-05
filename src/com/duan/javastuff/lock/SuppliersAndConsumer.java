@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  *
  * @author DuanJiaNing
  */
-public class TestConsumer<T> {
+public class SuppliersAndConsumer<T> {
 
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
@@ -23,6 +23,7 @@ public class TestConsumer<T> {
      * 要生产的“货物”及其生产方式
      */
     private final Supplier<T>[] suppliers;
+
     /**
      * 消费者
      */
@@ -48,7 +49,7 @@ public class TestConsumer<T> {
      */
     private boolean finished = false;
 
-    public TestConsumer(Consumer<T> consumer, Supplier<T>... suppliers) {
+    public SuppliersAndConsumer(Consumer<T> consumer, Supplier<T>... suppliers) {
         this.suppliers = suppliers;
         this.consumer = consumer;
     }

@@ -27,8 +27,8 @@ public class TestObjectMethods {
             P.out("wake up main thread after " + mill / 1000 + " seconds");
             try {
                 Thread.sleep(mill);
-                // 当前线程需要成为锁的持有者，才能使用其 notifyAll 方法，否则将得到
-                // IllegalMonitorStateException 异常
+                // 当前线程需要成为锁（监视器）的持有者，才能使用其 notifyAll 方法，否则将得到
+                // IllegalMonitorStateException 异常，这也意味着其它线程需要释放该锁。
                 synchronized (lock) {
                     lock.notifyAll();
                 }

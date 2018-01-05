@@ -9,7 +9,7 @@ public class Test {
     public static void main(String[] args) {
 
         @SuppressWarnings("unchecked")
-        TestConsumerPlus<String> consumer = new TestConsumerPlus<>(
+        SuppliersAndConsumerPlus<String> consumer = new SuppliersAndConsumerPlus<>(
                 String::getBytes,
                 () -> "a",
                 () -> "b",
