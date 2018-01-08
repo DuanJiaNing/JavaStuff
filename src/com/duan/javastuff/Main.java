@@ -1,5 +1,8 @@
 package com.duan.javastuff;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * Created on 2017/11/22.
  *
@@ -7,15 +10,8 @@ package com.duan.javastuff;
  */
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException {
-        Object obj = new Object();
-        synchronized (obj) {
-            P.out("wait");
-            obj.wait(2000);
-            P.out("wait over");
-        }
-
-
+    public static void main(String[] args) {
+        List<?> list = new LinkedList<>();
     }
 
 
