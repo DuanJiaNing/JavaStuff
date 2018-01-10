@@ -1,7 +1,6 @@
 package com.duan.javastuff;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.ByteBuffer;
 
 /**
  * Created on 2017/11/22.
@@ -11,8 +10,11 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
-        List<?> list = new LinkedList<>();
+        ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[]{1, 2, 3});
+        byteBuffer.putChar('c');
     }
+
+
 
 
 }
