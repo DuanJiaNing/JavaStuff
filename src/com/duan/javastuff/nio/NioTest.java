@@ -6,9 +6,10 @@ import org.junit.Test;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.ShortBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
+import java.util.logging.Level;
 
 /**
  * Created on 2018/1/4.
@@ -111,6 +112,74 @@ public class NioTest {
         while (buffer.hasRemaining())
             P.out(shortBuffer.get());
 
+    }
+
+    @Test
+    public void test() {
+
+        byte[] res = {1, 2, 3, 4};
+        ByteBuffer buffer = ByteBuffer.allocate(res.length + 3);
+        P.out(buffer.limit()); // 7
+        P.out(buffer.position()); // 0
+        P.out(buffer.remaining()); // 7
+        P.out(buffer.get(6)); // 0
+
+        buffer.put(res);
+        P.out(buffer.limit()); // 7
+        P.out(buffer.position());// 4
+        P.out(buffer.get()); // 0
+        P.out(buffer.get(3)); // 4
+
+        buffer.limit(4);
+        P.out(buffer.limit()); // 4
+        P.out(buffer.position());// 4
+        P.out(buffer.get(3)); // 4
+        P.out(buffer.get(1)); // 2
+        //P.out(buffer.get(6)); // IndexOutOfBoundsException
+        P.out(buffer.remaining());// 0
+        P.out(buffer.hasRemaining());// false
+
+        buffer.limit(6);
+        P.out(buffer.hasRemaining());// true
+        P.out(buffer.position());// 4
+        buffer.mark(); // 标记当前位置，mark=position=4
+        buffer.position(2); // if mark > position -> mark=-1，即设置的position小于mark的位置时，mark会被清除
+        buffer.mark(); // 从新标记 mark=2
+        P.out(buffer.get()); // 3 get当前position，并且position自增1
+        P.out(buffer.position());// 3
+        P.out(buffer.get(5)); // 0 不自增
+        buffer.reset();
+        P.out(buffer.position());// 2
+
+        buffer.put((byte) 12);
+
+    }
+
+    @Test
+    public void test11() {
+        byte[] res = {1, 2, 3, 4};
+        ByteBuffer buffer = ByteBuffer.allocate(res.length);
+        buffer.put(res);
+        P.out(buffer.position());
+        P.out(buffer.limit());
+        P.out(buffer.capacity());
+        buffer.put((byte) 11);
+        P.out(buffer.position());
+        P.out(buffer.limit());
+        P.out(buffer.capacity());
+        buffer.rewind();
+    }
+
+    @Test
+    public void test5() throws IOException {
+        FileInputStream file = new FileInputStream(from);
+        // 映射整个文件
+        int size = file.available();
+        MappedByteBuffer mappedByteBuffer = file.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, size);
+
+        for (int i = size / 2; i < size / 2 + 6; i++) {
+            P.out((char) mappedByteBuffer.get(i));
+        }
     }
 
 }
