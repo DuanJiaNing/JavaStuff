@@ -1,7 +1,6 @@
 package com.duan.javastuff;
 
-import java.util.LinkedList;
-import java.util.List;
+import com.duan.javastuff.test.TestB;
 
 /**
  * Created on 2017/11/22.
@@ -17,8 +16,10 @@ public class Main {
         double d = 1;
         float f = 1;
         long l = 1;
-        short s =  a + b;
+        short s = a + b;
 
+        TestB tb = new TestB();
+        System.out.println("tb.add() = " + tb.add());
 
     }
 
