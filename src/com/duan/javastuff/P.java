@@ -9,6 +9,7 @@ import java.util.Date;
  * @author DuanJiaNing
  */
 public class P {
+
     private static final SimpleDateFormat format = new SimpleDateFormat("dd/MM/YYYY HH:mm:ss-SSS");
 
     public static void out(Object obj) {
