@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class BeanA {
 
+    public String name = "";
+
     public void out(Object obj) {
         System.out.println("BeanA.out " + obj);
     }
