@@ -1,0 +1,78 @@
+post-processing: 公告处理过程，如 BeanPostProcessor，BeanFactoryPostProcessor
+
+两种注册 bean 的方式：
+ClassPathXmlApplicationContext：从 xml 中解析并把 BeanDefinition 通过 BeanDefinitionDocumentReader(DefaultBeanDefinitionDocumentReader.processBeanDefinition) 注册到 BeanFactory 中
+入口：AbstractApplicationContext.refreshBeanFactory(在 refresh 中调用)
+
+AnnotationConfigApplicationContext：通过 BeanDefinitionScanner + BeanDefinitionRegistry 扫描包并注册到 BeanFactory 中
+入口：AnnotationConfigApplicationContext 的构造函数
+BeanDefinitionScanner.doScan -> Set<BeanDefinition> -> BeanDefinitionRegistry.registerBeanDefinition/registerAlias -> Map<String,BeanDefinition>(ConcurrentHashMap)
+
+图：继承树
+ApplicationContext 的继承树，BeanFactory 的继承树 https://www.jianshu.com/p/9fe5a3c25ab6
+
+扩展点
+beanNameGenerator: ClassPathBeanDefinitionScanner.doScan，修改 Bean name
+BeanPostProcessor: AbstractApplicationContext.postProcessBeanFactory，refresh 中调用，bean 实例化前后进行操作
+BeanFactoryPostProcessor: AbstractApplicationContext.invokeBeanFactoryPostProcessors，修改或检查 BeanDefinitionRegistry 和 BeanFactory 的属性
+MessageSource: AbstractApplicationContext.initMessageSource 中进行初始化，提供 name 为 messageSource 的 bean 即可，处理国际化
+ApplicationEventMulticaster: AbstractApplicationContext.initApplicationEventMulticaster 中初始化，提供 name 为 applicationEventMulticaster 的 bean 即可
+
+
+关键流程
+AbstractApplicationContext.refresh
+初始化容器：对单例 bean 进行实例化
+1. prepareRefresh: validate required env properties,setting startup date and flag ..
+2. obtainFreshBeanFactory:
+   getBeanFactory(): 供子类扩展以提供自己的 BeanFactory：
+     1. Refreshable：AbstractRefreshableApplicationContext 支持多次调用 refreshBeanFactory，beanFactory 存在则先销毁关闭，然后再初始化，加载 Bean 定义。如
+        ClassPathXmlApplicationContext
+     2. Generic：GenericApplicationContext 的 BeanFactory 只能初始化一次， refreshBeanFactory 只能调用一次。如 AnnotationConfigApplicationContext
+   refreshBeanFactory(): 只有 Refreshable 的 BeanFactory 才应该实现该方法。 如 AbstractRefreshableApplicationContext 中的实现会调用 loadBeanDefinitions 刷新 beanDefinitionMap，关键类如下：
+     1 AbstractApplicationContext refresh 起始调用处
+     2 AbstractRefreshableApplicationContext 定义 loadBeanDefinitions
+     3 AbstractRefreshableConfigApplicationContext
+     4 AbstractXmlApplicationContext 实现 loadBeanDefinitions，用 BeanDefinitionReader
+     5 ClassPathXmlApplicationContext 我们开发时实例化的
+3. prepareBeanFactory: 初始化 BeanFactory，设置 BeanExpressionResolver，beanClassLoader 等。实例化框架默认的几个 Bean，都为单例
+   SingletonBeanRegistry.registerSingleton -> singletonObjects
+   添加了 BeanPostProcessor：ApplicationListenerDetector
+4. postProcessBeanFactory:扩展点 addBeanPostProcessor，影响 bean 实例的创建。子类可在该方法中添加 BeanPostProcessor(在 bean 实例化前后将收到回调)
+   如 spring-web 的 ServletContextAwareProcessor(BeanPostProcessor) 会将 ServletContext 通过 ServletContextAware 接口将 ServletContext 传递给实现了该接口的 Bean(检查 bean 是否实现 ServletContextAware 接口，实现就强转并调用其回调方法)
+5. invokeBeanFactoryPostProcessors：扩展点，可修改或检查 BeanDefinitionRegistry 和 BeanFactory 的属性。 回调实现了 BeanFactoryPostProcessor
+   的所有Bean。调用优先顺序如下：
+   phase 1: BeanDefinitionRegistryPostProcessor：PriorityOrdered > Ordered > 剩余的
+   phase 2: BeanFactoryPostProcessor：PriorityOrdered > Ordered > 剩余的
+   这些 bean 会被优先实例化并立即调用其回调方法
+6. registerBeanPostProcessors：实例化所有实现了 BeanPostProcessor 的 Bean，实例化并将其添加到 BeanFactory 的 beanPostProcessors 集合中，共有如下 5 类：
+   1. 实现了 BeanPostProcessor 和 PriorityOrdered 的
+   2. 实现了 BeanPostProcessor 和 Ordered 的
+   3. 只实现了 BeanPostProcessor 的
+   4. 实现了 MergedBeanDefinitionPostProcessor 的
+   5. Spring 内部的 ApplicationListenerDetector，用于检查 Bean 是否实现了 ApplicationListener，实现了就将其放入到 AbstractApplicationContext 的
+      applicationEventMulticaster 集合中。 这里是第二次注册，第一次注册在 prepareBeanFactory，这里再次注册是为了将其移动到 list 的末尾，addBeanPostProcessor 会检查是否添加过(底层为 CopyOnWriteArrayList ，通过 equals 检查，ApplicationListenerDetector 覆写了 equals，最终比较 ApplicationContext)，添加过就先移除。
+7. initMessageSource: 扩展点，设置用于处理国际化的 MessageSource
+   检查是否有名字为 messageSource 的 bean
+   1. 如果实现了 HierarchicalMessageSource 且当前 ApplicationContext.parent 不为 null，递归找到最上层的 ApplicationContext.parent 的 MessageSource，后调用
+      HierarchicalMessageSource.setParentMessageSource (BTW ApplicationContext 也继承了 MessageSource)
+   2. 如果没实现，使用一个委派的 MessageSource: DelegatingMessageSource
+8. initApplicationEventMulticaster: 扩展点，初始化事件多路广播
+   检查是否有名字为 applicationEventMulticaster 的 bean
+   1. 有: 直接赋值
+   2. 没有: 使用 SimpleApplicationEventMulticaster，将所有事件多路广播给所有注册的监听者 ApplicationListener，然监听者自己选择(instanceof)要处理哪些事件。 设置了 TaskExecutor 就提交到其中执行，否则直接 invokeListener。
+9. onRefresh: 由子类定义上下文相关的刷新动作，该动作发生在实例化剩余 bean 之前
+   GenericWebApplicationContext 和 AbstractRefreshableWebApplicationContext 中的实现相同，是对 ThemeSource 的初始化。（主题，css,image,web env,file paths ..）
+10. registerListeners: 注册 ApplicationListener，添加到多路广播器中 ApplicationEventMulticaster.addApplicationListener
+    同时广播一些早期事件，即在此之前堆积的事件，因为此时广播器才初始化完成。
+    AbstractApplicationContext 实现了 ApplicationEventPublisher，AbstractApplicationContext.publishEvent 可以直接广播事件
+11. finishBeanFactoryInitialization: 实例化剩余的 bean 单例
+
+
+加载所有 bean 定义到 BeanFactory 的位置：
+1. 内部：AbstractApplicationContext.refresh 方法内的 obtainFreshBeanFactory 调用
+2. 外部：AnnotationConfigApplicationContext，GenericGroovyApplicationContext 构造器内
+
+
+首先，BeanFactory 本身实现了 BeanDefinitionRegistry， BeanDefinitionRegistryPostProcessors 基于实现接口不同优先级不同：PriorityOrdered(优先专用) > Ordered > 没实现任何接口的
+最后调用 BeanFactoryPostProcessor.postProcessBeanFactory
+registerBeanPostProcessors:
