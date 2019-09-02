@@ -1,0 +1,47 @@
+AbstractApplicationContext.refresh  ConfigurableListableBeanFactory  AbstractRefreshableApplicationContext(ClassPathXmlApplicationContext)  AbstractXmlApplicationContext
+2. obtainFreshBeanFactory
+|                                                                     refreshBeanFactory
+                                                                        if hasBeanFactory
+                                                                           destroyBeans
+                                                                           closeBeanFactory
+                                                                      |                                                                      loadBeanDefinitions
+|                                                                     getBeanFactory
+
+3. prepareBeanFactory
+|                                   setBeanExpressionResolver
+                                    addBeanPostProcessor:ApplicationListenerDetector LoadTimeWeaverAwareProcessor
+                                    registerSingleton: ENVIRONMENT_BEAN SYSTEM_PROPERTIES SYSTEM_ENVIRONMENT_BEAN
+
+4.postProcessBeanFactory(registering BeanPostProcessors)
+|                                                                     addBeanPostProcessor: ServletContextAwareProcessor
+
+
+----------------------------------------------------
+AbstractApplicationContext.refresh   PostProcessorRegistrationDelegate  ConfigurableListableBeanFactory  BeanDefinitionRegistryPostProcessor   BeanFactoryPostProcessor
+5. invokeBeanFactoryPostProcessors
+|                                    invokeBeanFactoryPostProcessors
+                                     |                                                                   postProcessBeanDefinitionRegistry: PriorityOrdered > Ordered > 剩余的
+                                     |                                                                                                         postProcessBeanFactory: PriorityOrdered > Ordered > 剩余的
+6. registerBeanPostProcessors
+                                     registerBeanPostProcessors
+                                     |                                  addBeanPostProcessor: PriorityOrdered > Ordered > 剩余的 > MergedBeanDefinitionPostProcessor > +ApplicationListenerDetector
+
+11. finishBeanFactoryInitialization
+|                                                                       getBean: weaverAwareNames
+                                                                        preInstantiateSingletons
+
+----------------------------------------------------
+AbstractApplicationContext.refresh
+1. prepareRefresh
+7. initMessageSource
+8. initApplicationEventMulticaster
+9. onRefresh
+12. finishRefresh
+
+----------------------------------------------------
+AbstractApplicationContext.refresh   ApplicationEventMulticaster
+10.registerListeners
+|                                    addApplicationListener
+                                     addApplicationListenerBean
+                                     multicastEvent: earlyApplicationEvents
+
